@@ -33,7 +33,9 @@ class TransactionCreate(BaseModel):
     @classmethod
     def validate_uuids(cls, v: str) -> UUID:
         try:
-            return uuid.UUID(v)
+            if not isinstance(v, UUID):
+                return uuid.UUID(v)
+            return v
         except ValueError:
             raise ValueError(f"Invalid UUID format: {v}")
 
