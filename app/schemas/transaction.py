@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, field_validator
 from pydantic.types import UUID
 import uuid
@@ -6,13 +6,20 @@ import uuid
 
 # Input Schema (API -> System)
 class TransactionCreate(BaseModel):
-    transaction_id: str
+    transaction_id: UUID
     timestamp: datetime
     amount: float
     currency: str
-    customer_id: str
-    product_id: str
+    customer_id: UUID
+    product_id: UUID
     quantity: int
+
+    @field_validator("timestamp")
+    @classmethod
+    def validate_timestamp(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
     @field_validator("currency")
     @classmethod
@@ -32,7 +39,16 @@ class TransactionCreate(BaseModel):
     @field_validator("amount")
     @classmethod
     def validate_amount(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("Amount must be a positive number.")
         return round(v, 2)
+
+    @field_validator("quantity")
+    @classmethod
+    def validate_quantity(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("Quantity must be a positive number.")
+        return v
 
 
 # Output Schema (System -> API)
