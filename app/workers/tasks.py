@@ -1,13 +1,11 @@
 import csv
 import io
-import logging
 
 from app.db.session_sync import SessionLocal
+from app.logging_config import logger
 from app.schemas.transaction import TransactionCreate
 from app.services.transactions import create_transaction
 from app.workers.celery_worker import celery_app
-
-logger = logging.getLogger(__name__)
 
 
 @celery_app.task
