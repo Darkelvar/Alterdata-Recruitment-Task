@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.api_v1.endpoints import transactions, reports
+
+from app.api.api_v1.endpoints import reports, transactions
 
 api_router = APIRouter()
 api_router.include_router(

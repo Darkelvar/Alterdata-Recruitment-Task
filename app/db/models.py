@@ -1,7 +1,9 @@
-from sqlalchemy import Column, String, Float, Integer, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from app.db.base import Base
 from datetime import datetime, timezone
+
+from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
+
+from app.db.base import Base
 
 
 class Transaction(Base):

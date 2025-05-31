@@ -1,7 +1,8 @@
+import uuid
 from datetime import datetime, timezone
+
 from pydantic import BaseModel, field_validator
 from pydantic.types import UUID
-import uuid
 
 
 # Input Schema (API -> System)
