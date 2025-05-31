@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 from datetime import datetime, timezone
 
+
 class Transaction(Base):
     __tablename__ = "transactions"
 
