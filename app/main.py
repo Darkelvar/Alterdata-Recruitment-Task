@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 
 from app.api.api_v1.api import api_router
 from app.core.config import settings
-from app.exceptions import AppException
-from app.logging_config import logger
+from app.core.exceptions import AppException
+from app.core.logging_config import logger
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

@@ -7,8 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Transaction
-from app.exceptions import AppException
-from app.logging_config import logger
+from app.core.exceptions import AppException
+from app.core.logging_config import logger
 
 EXCHANGE_RATES = {"PLN": 1.0, "EUR": 4.3, "USD": 4.0}
 

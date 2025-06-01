@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.exceptions import AppException
-from app.logging_config import logger
+from app.core.exceptions import AppException
+from app.core.logging_config import logger
 from app.services.reports import (
     get_customer_summary,
     get_product_summary,

@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.db.models import Transaction
-from app.exceptions import AppException
-from app.logging_config import logger
+from app.core.exceptions import AppException
+from app.core.logging_config import logger
 from app.schemas.transaction import TransactionCreate
 
 

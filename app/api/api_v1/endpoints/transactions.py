@@ -5,8 +5,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.exceptions import AppException
-from app.logging_config import logger
+from app.core.exceptions import AppException
+from app.core.logging_config import logger
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import Transaction
 from app.services.transactions import get_transaction, get_transactions
