@@ -4,9 +4,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.core.auth import get_current_user
 from app.core.exceptions import AppException
 from app.core.logging_config import logger
+from app.db.session import get_db
 from app.services.reports import (
     get_customer_summary,
     get_product_summary,
@@ -19,6 +20,7 @@ router = APIRouter()
 @router.get("/customer-summary/{customer_id}")
 async def customer_summary(
     customer_id: UUID,
+    current_user: str = Depends(get_current_user),
     start_date: datetime = None,
     end_date: datetime = None,
     db: Session = Depends(get_db),
@@ -45,6 +47,7 @@ async def customer_summary(
 @router.get("/product-summary/{product_id}")
 async def product_summary(
     product_id: UUID,
+    current_user: str = Depends(get_current_user),
     start_date: datetime = None,
     end_date: datetime = None,
     db: Session = Depends(get_db),

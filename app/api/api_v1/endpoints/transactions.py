@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db
+from app.core.auth import get_current_user
 from app.core.exceptions import AppException
 from app.core.logging_config import logger
+from app.db.session import get_db
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import Transaction
 from app.services.transactions import get_transaction, get_transactions
@@ -16,7 +17,10 @@ router = APIRouter()
 
 
 @router.post("/upload", response_class=JSONResponse)
-def upload_transactions(file: UploadFile = File(...)):
+def upload_transactions(
+    file: UploadFile = File(...),
+    current_user: str = Depends(get_current_user),
+):
     try:
         contents = file.file.read()
         if not contents:
@@ -64,6 +68,7 @@ async def read_transactions(
     customer_id: UUID = None,
     product_id: UUID = None,
     db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ):
     if skip < 0 or limit < 0:
         raise AppException(
@@ -91,6 +96,7 @@ async def read_transactions(
 async def read_transaction(
     transaction_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ):
     try:
         transaction = await get_transaction(db, transaction_id=transaction_id)

@@ -1,6 +1,7 @@
 from celery.result import AsyncResult
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.core.auth import get_current_user
 from app.core.exceptions import AppException
 from app.core.logging_config import logger
 from app.workers.celery_worker import celery_app
@@ -9,7 +10,10 @@ router = APIRouter()
 
 
 @router.get("/{task_id}")
-def get_task_result(task_id: str):
+def get_task_result(
+    task_id: str,
+    current_user: str = Depends(get_current_user),
+):
     try:
         result = AsyncResult(task_id, app=celery_app)
 
