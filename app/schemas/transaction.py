@@ -42,6 +42,8 @@ class TransactionCreate(BaseModel):
     @field_validator("amount")
     @classmethod
     def validate_amount(cls, v: float) -> float:
+        if not isinstance(v, float):
+            raise ValueError("Amount must be a valid number.")
         if v <= 0:
             raise ValueError("Amount must be a positive number.")
         return round(v, 2)
@@ -49,6 +51,8 @@ class TransactionCreate(BaseModel):
     @field_validator("quantity")
     @classmethod
     def validate_quantity(cls, v: int) -> int:
+        if not isinstance(v, int):
+            raise ValueError("Quantity must be an integer.")
         if v <= 0:
             raise ValueError("Quantity must be a positive number.")
         return v

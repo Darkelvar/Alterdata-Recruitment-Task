@@ -1,13 +1,13 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import func, select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.db.models import Transaction
+from app.exceptions import AppException
 from app.logging_config import logger
 from app.schemas.transaction import TransactionCreate
 
@@ -19,10 +19,26 @@ def create_transaction(db: Session, transaction: TransactionCreate):
         db.commit()
         db.refresh(db_transaction)
         return db_transaction
+    except IntegrityError as e:
+        db.rollback()
+        logger.exception(
+            f"Duplicate transaction detected: {transaction.transaction_id}. Error: {e}"
+        )
+        raise AppException(
+            f"Transaction with ID: {transaction.transaction_id} already exists.",
+            code="CREATE_TRANSACTION_DUPLICATE_FAIL",
+            status_code=500,
+        )
     except SQLAlchemyError as e:
         db.rollback()
-        logger.error(f"DB error: {str(e)}")
-        raise
+        logger.exception(
+            f"DB error inserting transaction {transaction.transaction_id}. Error: {e}"
+        )
+        raise AppException(
+            f"Database error while saving transaction: {transaction.transaction_id}.",
+            code="CREATE_TRANSACTION_DB_FAIL",
+            status_code=500,
+        )
 
 
 async def get_transaction(db: AsyncSession, transaction_id: UUID) -> Transaction | None:
@@ -32,16 +48,29 @@ async def get_transaction(db: AsyncSession, transaction_id: UUID) -> Transaction
         )
         return result.scalars().first()
     except SQLAlchemyError as e:
-        logger.error(f"DB error fetching transaction {transaction_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        logger.exception(f"DB error fetching transaction {transaction_id}. Error: {e}")
+        raise AppException(
+            f"DB error fetching transaction {transaction_id}.",
+            code="GET_TRANSACTION_DB_FAIL",
+            status_code=500,
+        )
+    except Exception as e:
+        logger.exception(
+            f"Unexpected error fetching transaction {transaction_id}. Error: {e}"
+        )
+        raise AppException(
+            f"Unexpected error fetching transaction {transaction_id}.",
+            CODE="GET_TRANSACTION_SCALAR_FAIL",
+            status_code=500,
+        )
 
 
 async def get_transactions(
     db: AsyncSession,
     skip: int = 0,
     limit: int = 100,
-    customer_id: Optional[UUID] = None,
-    product_id: Optional[UUID] = None,
+    customer_id: UUID | None = None,
+    product_id: UUID | None = None,
 ) -> tuple[int, List[Transaction]]:
     try:
         base_query = select(Transaction)
@@ -62,5 +91,16 @@ async def get_transactions(
 
         return total, transactions
     except SQLAlchemyError as e:
-        logger.error(f"DB error fetching transactions: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        logger.exception(f"DB error fetching transactions. Error: {e}")
+        raise AppException(
+            "Database error while fetching transactions.",
+            code="GET_TRANSACTIONS_DB_FAIL",
+            status_code=500,
+        )
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching transactions. Error: {e}")
+        raise AppException(
+            "Unexpected error while fetching transactions.",
+            code="GET_TRANSACTIONS_SCALAR_FAIL",
+            status_code=500,
+        )

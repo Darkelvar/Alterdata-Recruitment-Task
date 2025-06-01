@@ -1,23 +1,38 @@
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, List
+from uuid import UUID
 
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db.models import Transaction
+from app.exceptions import AppException
 from app.logging_config import logger
 
 EXCHANGE_RATES = {"PLN": 1.0, "EUR": 4.3, "USD": 4.0}
 
 
-async def get_customer_summary(
+def convert_to_pln(amount: float, currency: str) -> float:
+    # For any non-specified currency the exchange rate is 1 X = 4.20 PLN
+    return amount * EXCHANGE_RATES.get(currency, 4.2)
+
+
+async def get_relevant_transactions(
     db: AsyncSession,
-    customer_id: UUID,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
-) -> Dict[str, Any]:
+    customer_id: UUID | None = None,
+    product_id: UUID | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> List[Transaction]:
     try:
-        filters = [Transaction.customer_id == customer_id]
+        context = (
+            f"customer: {customer_id}" if customer_id else f"product: {product_id}"
+        )
+        if customer_id:
+            filters = [Transaction.customer_id == customer_id]
+        elif product_id:
+            filters = [Transaction.product_id == product_id]
         if start_date:
             filters.append(Transaction.timestamp >= start_date)
         if end_date:
@@ -27,11 +42,40 @@ async def get_customer_summary(
         transactions = result.scalars().all()
 
         if not transactions:
-            return None
+            logger.exception(f"No transactions found for {context}.")
+            raise AppException(
+                f"No transactions found for {context}.",
+                code="GET_REL_TRANSACTIONS_NOT_FOUND_FAIL",
+                status_code=404,
+            )
+        return transactions
+    except AppException:
+        raise
+    except SQLAlchemyError as e:
+        logger.exception(f"DB error retrieving transactions for {context}. Error: {e}")
+        raise AppException(
+            f"DB error retrieving transactions for {context}.",
+            code="GET_REL_TRANSACTIONS_DB_FAIL",
+            status_code=500,
+        )
+    except Exception as e:
+        logger.exception(
+            f"Unexpected error retrieving transactions for {context}. Error: {e}"
+        )
+        raise AppException(
+            f"Unexpected error retrieving transactions for {context}.",
+            code="GET_REL_TRANSACTIONS_FAIL",
+            status_code=500,
+        )
 
-        # For any non-specified currency the exchange rate is 1 X = 4.20 PLN
+
+def get_customer_summary(
+    customer_id: UUID,
+    transactions: List[Transaction],
+) -> Dict[str, Any]:
+    try:
         total_amount_pln = sum(
-            t.amount * EXCHANGE_RATES.get(t.currency, 4.2) for t in transactions
+            convert_to_pln(t.amount, t.currency) for t in transactions
         )
         product_ids = {t.product_id for t in transactions}
         last_transaction = max(t.timestamp for t in transactions)
@@ -44,31 +88,23 @@ async def get_customer_summary(
             "transaction_count": len(transactions),
         }
     except Exception as e:
-        logger.error(f"Error generating customer summary: {e}")
-        raise
+        logger.exception(
+            f"Unexpected error generating customer summary for {customer_id}. Error: {e}"
+        )
+        raise AppException(
+            f"Unexpected error generating customer summary for {customer_id}.",
+            code="GENERATE_CUSTOMER_SUMMARY_FAIL",
+            status_code=500,
+        )
 
 
-async def get_product_summary(
-    db: AsyncSession,
+def get_product_summary(
     product_id: UUID,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    transactions: List[Transaction],
 ) -> Dict[str, Any]:
     try:
-        filters = [Transaction.product_id == product_id]
-        if start_date:
-            filters.append(Transaction.timestamp >= start_date)
-        if end_date:
-            filters.append(Transaction.timestamp <= end_date)
-
-        result = await db.execute(select(Transaction).where(and_(*filters)))
-        transactions = result.scalars().all()
-
-        if not transactions:
-            return None
-
         total_amount_pln = sum(
-            t.amount * EXCHANGE_RATES.get(t.currency, 4.2) for t in transactions
+            convert_to_pln(t.amount, t.currency) for t in transactions
         )
         total_quantity = sum(t.quantity for t in transactions)
         customer_ids = {t.customer_id for t in transactions}
@@ -81,5 +117,11 @@ async def get_product_summary(
             "transaction_count": len(transactions),
         }
     except Exception as e:
-        logger.error(f"Error generating product summary: {e}")
-        raise
+        logger.exception(
+            f"Unexpected error generating product summary for {product_id}. Error: {e}"
+        )
+        raise AppException(
+            f"Unexpected error generating product summary for {product_id}.",
+            code="GENERATE_PRODUCT_SUMMARY_FAIL",
+            status_code=500,
+        )

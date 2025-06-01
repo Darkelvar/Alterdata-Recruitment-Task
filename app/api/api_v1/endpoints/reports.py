@@ -1,17 +1,19 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.db.models import Transaction
 from app.db.session import get_db
-from app.services.reports import get_customer_summary, get_product_summary
+from app.exceptions import AppException
+from app.logging_config import logger
+from app.services.reports import (
+    get_customer_summary,
+    get_product_summary,
+    get_relevant_transactions,
+)
 
 router = APIRouter()
-
-# Exchange rates (simplified for this example)
-EXCHANGE_RATES = {"PLN": 1.0, "EUR": 4.3, "USD": 4.0}
 
 
 @router.get("/customer-summary/{customer_id}")
@@ -21,12 +23,23 @@ async def customer_summary(
     end_date: datetime = None,
     db: Session = Depends(get_db),
 ):
-    summary = await get_customer_summary(db, customer_id, start_date, end_date)
-    if not summary:
-        raise HTTPException(
-            status_code=404, detail="No transactions found for this customer"
+    try:
+        transactions = await get_relevant_transactions(
+            db=db, customer_id=customer_id, start_date=start_date, end_date=end_date
         )
-    return summary
+        summary = get_customer_summary(customer_id, transactions)
+        return summary
+    except AppException:
+        raise
+    except Exception as e:
+        logger.exception(
+            f"Unexpected error generating summary for customer: {customer_id}. Error: {e}"
+        )
+        raise AppException(
+            f"Unexpected error generating summary for customer: {customer_id}.",
+            code="GET_CUSTOMER_SUMMARY_FAIL",
+            status_code=500,
+        )
 
 
 @router.get("/product-summary/{product_id}")
@@ -36,9 +49,20 @@ async def product_summary(
     end_date: datetime = None,
     db: Session = Depends(get_db),
 ):
-    summary = await get_product_summary(db, product_id, start_date, end_date)
-    if not summary:
-        raise HTTPException(
-            status_code=404, detail="No transactions found for this product"
+    try:
+        transactions = await get_relevant_transactions(
+            db=db, product_id=product_id, start_date=start_date, end_date=end_date
         )
-    return summary
+        summary = get_product_summary(product_id, transactions)
+        return summary
+    except AppException:
+        raise
+    except Exception as e:
+        logger.exception(
+            f"Unexpected error generating summary for product: {product_id}. Error: {e}"
+        )
+        raise AppException(
+            f"Unexpected error generating summary for product: {product_id}.",
+            code="GET_PRODUCT_SUMMARY_FAIL",
+            status_code=500,
+        )
