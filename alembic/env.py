@@ -15,6 +15,15 @@ from app.db.models import Transaction  # noqa
 # access to the values within the .ini file in use.
 config = context.config
 
+
+cli_db_url = context.get_x_argument(as_dictionary=True).get("db_url")
+
+# Use overridden URL if provided, else fallback to config file
+if cli_db_url:
+    alembic_url = cli_db_url
+else:
+    alembic_url = config.get_main_option("sqlalchemy.url")
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
@@ -44,9 +53,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=alembic_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -64,7 +72,7 @@ def run_migrations_online() -> None:
 
     """
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        {"sqlalchemy.url": alembic_url},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

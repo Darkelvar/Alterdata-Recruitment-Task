@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     DATABASE_URL_SYNC: str = (
         "postgresql+psycopg2://transaction_user:transaction_pass@db:5432/transaction_db"
     )
+    DATABASE_URL_TEST: str = (
+        "postgresql+asyncpg://transaction_user:transaction_pass@test-db:5432/transaction_test_db"
+    )
+    DATABASE_URL_TEST_SYNC: str = (
+        "postgresql+psycopg2://transaction_user:transaction_pass@test-db:5432/transaction_test_db"
+    )
     REDIS_HOST: str = "redis"
     REDIS_PORT: str = "6379"
 

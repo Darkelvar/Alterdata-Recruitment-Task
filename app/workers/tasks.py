@@ -3,9 +3,9 @@ import io
 
 from pydantic import ValidationError
 
-from app.db.session_sync import SessionLocal
 from app.core.exceptions import AppException
 from app.core.logging_config import logger
+from app.db.session_sync import SessionLocal
 from app.schemas.transaction import TransactionCreate
 from app.services.transactions import create_transaction
 from app.workers.celery_worker import celery_app

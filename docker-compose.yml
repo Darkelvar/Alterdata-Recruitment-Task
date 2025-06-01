@@ -11,6 +11,16 @@ services:
       - db
       - redis
 
+  test:
+    build: .
+    container_name: transaction_tests
+    command: pytest
+    volumes:
+      - .:/code
+    depends_on:
+      - test-db
+      - redis
+
   db:
     image: postgres:17-alpine
     container_name: transaction_db
@@ -22,6 +32,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  test-db:
+    image: postgres:17-alpine
+    container_name: transaction_test_db
+    environment:
+      POSTGRES_USER: transaction_user
+      POSTGRES_PASSWORD: transaction_pass
+      POSTGRES_DB: transaction_test_db
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
 
   redis:
     image: redis:8-alpine
@@ -42,3 +64,4 @@ services:
 
 volumes:
   postgres_data:
+  test_postgres_data:

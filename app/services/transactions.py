@@ -6,9 +6,9 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.db.models import Transaction
 from app.core.exceptions import AppException
 from app.core.logging_config import logger
+from app.db.models import Transaction
 from app.schemas.transaction import TransactionCreate
 
 
