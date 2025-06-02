@@ -30,7 +30,7 @@ async def test_get_transactions_returns_all(client, async_db):
     async_db.add_all([transaction, transaction_2])
     await async_db.commit()
 
-    response = await client.get("/api/v1/transactions/")
+    response = await client.get("/api/v1/transactions")
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 2
@@ -70,7 +70,7 @@ async def test_get_transactions_with_filters(client, async_db):
     async_db.add_all([transaction, transaction_2, transaction_3])
     await async_db.commit()
     response = await client.get(
-        "/api/v1/transactions/",
+        "/api/v1/transactions",
         params={"customer_id": "111e4567-e89b-12d3-a456-426614174001"},
     )
     print(response.request.url)
@@ -82,7 +82,7 @@ async def test_get_transactions_with_filters(client, async_db):
         for tx in data["data"]
     )
     response = await client.get(
-        "/api/v1/transactions/",
+        "/api/v1/transactions",
         params={"product_id": "111e4567-e89b-12d3-a456-426614174001"},
     )
     assert response.status_code == 200
@@ -93,7 +93,7 @@ async def test_get_transactions_with_filters(client, async_db):
         for tx in data["data"]
     )
     response = await client.get(
-        "/api/v1/transactions/",
+        "/api/v1/transactions",
         params={"limit": 1, "skip": 1},
     )
     assert response.status_code == 200
@@ -104,17 +104,17 @@ async def test_get_transactions_with_filters(client, async_db):
 
 @pytest.mark.anyio
 async def test_get_transactions_invalid_skip_limit(client):
-    response = await client.get("/api/v1/transactions/?skip=-1")
+    response = await client.get("/api/v1/transactions?skip=-1")
     assert response.status_code == 400
     assert "must not be negative" in response.text
-    response = await client.get("/api/v1/transactions/?limit=-1")
+    response = await client.get("/api/v1/transactions?limit=-1")
     assert response.status_code == 400
     assert "must not be negative" in response.text
 
 
 @pytest.mark.anyio
 async def test_get_transactions_empty(client):
-    response = await client.get("/api/v1/transactions/")
+    response = await client.get("/api/v1/transactions")
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == 0

@@ -61,7 +61,7 @@ def upload_transactions(
         )
 
 
-@router.get("/", response_model=PaginatedResponse[Transaction])
+@router.get("", response_model=PaginatedResponse[Transaction])
 async def read_transactions(
     skip: int = 0,
     limit: int = 100,
