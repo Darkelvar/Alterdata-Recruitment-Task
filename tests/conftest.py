@@ -10,45 +10,77 @@ from app.db.session import get_db
 from app.db.session_sync import get_sync_db
 from app.main import app
 
-engine_test = create_async_engine(settings.DATABASE_URL_TEST)
-AsyncSessionLocal = sessionmaker(
-    bind=engine_test,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
 
-
-async def override_get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
-
-
-engine_test_sync = create_engine(settings.DATABASE_URL_TEST_SYNC)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_test_sync)
-
-
-def override_get_db_sync():
-    with SessionLocal() as db:
-        yield db
-
-
-app.dependency_overrides[get_db] = override_get_db
-app.dependency_overrides[get_sync_db] = override_get_db_sync
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def prepare_test_db():
-    async with engine_test.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with engine_test.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+@pytest.fixture(scope="session")
+def session_async_engine():
+    return create_async_engine(settings.DATABASE_URL_TEST)
 
 
 @pytest.fixture
-def anyio_backend():
-    return "asyncio"
+def async_engine():
+    return create_async_engine(settings.DATABASE_URL_TEST)
+
+
+@pytest.fixture
+def sync_engine():
+    return create_engine(settings.DATABASE_URL_TEST_SYNC)
+
+
+@pytest.fixture
+def sync_session_factory(sync_engine):
+    return sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+
+
+@pytest.fixture
+async def async_db(async_engine):
+    session_factory = sessionmaker(
+        bind=async_engine, class_=AsyncSession, expire_on_commit=False
+    )
+    async with session_factory() as session:
+        yield session
+
+
+@pytest.fixture
+def sync_db(sync_engine):
+    Session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+    with Session() as session:
+        yield session
+
+
+@pytest.fixture(autouse=True)
+def override_dependencies(async_engine, sync_engine):
+    async def _override_get_db():
+        session_factory = sessionmaker(
+            bind=async_engine, class_=AsyncSession, expire_on_commit=False
+        )
+        async with session_factory() as session:
+            yield session
+
+    def _override_get_db_sync():
+        Session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+        with Session() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_sync_db] = _override_get_db_sync
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def prepare_test_db(session_async_engine):
+    async with session_async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with session_async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest.fixture(autouse=True)
+def clean_database(sync_db):
+    sync_db.execute(text("SET session_replication_role = replica;"))
+    sync_db.execute(text("TRUNCATE TABLE transactions RESTART IDENTITY CASCADE;"))
+    sync_db.execute(text("SET session_replication_role = origin;"))
+    sync_db.commit()
 
 
 @pytest.fixture
@@ -59,41 +91,10 @@ async def client():
         )
         response.raise_for_status()
         token = response.json()["access_token"]
-
-        # Attach Authorization header
         ac.headers.update({"Authorization": f"Bearer {token}"})
         yield ac
 
 
 @pytest.fixture
-def sync_db():
-    gen = override_get_db_sync()
-    db = next(gen)
-    try:
-        yield db
-    finally:
-        try:
-            next(gen)
-        except StopIteration:
-            pass
-
-
-@pytest.fixture
-async def async_db():
-    agen = override_get_db()
-    db = await agen.__anext__()
-    try:
-        yield db
-    finally:
-        try:
-            await agen.__anext__()
-        except StopAsyncIteration:
-            pass
-
-
-@pytest.fixture(autouse=True)
-def clean_database(sync_db):
-    sync_db.execute(text("SET session_replication_role = replica;"))
-    sync_db.execute(text("TRUNCATE TABLE transactions RESTART IDENTITY CASCADE;"))
-    sync_db.execute(text("SET session_replication_role = origin;"))
-    sync_db.commit()
+def anyio_backend():
+    return "asyncio"

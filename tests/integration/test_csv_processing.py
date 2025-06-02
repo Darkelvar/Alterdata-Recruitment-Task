@@ -5,7 +5,6 @@ import pytest
 from app.db.models import Transaction
 from app.workers import tasks as task_module
 from app.workers.tasks import process_csv_contents
-from tests.conftest import SessionLocal
 
 VALID_CSV = f"""transaction_id,timestamp,amount,currency,customer_id,product_id,quantity
 {uuid4()},2023-01-01T12:00:00,100.0,USD,{uuid4()},{uuid4()},2
@@ -27,9 +26,9 @@ INVALID_CSV_BAD_DATA = f"""transaction_id,timestamp,amount,currency,customer_id,
 
 
 @pytest.fixture(autouse=True)
-def patch_task_sessionlocal(monkeypatch):
+def patch_task_sessionlocal(monkeypatch, sync_session_factory):
     # Patch Celery task's SessionLocal to test DB SessionLocal
-    monkeypatch.setattr(task_module, "SessionLocal", SessionLocal)
+    monkeypatch.setattr(task_module, "SessionLocal", sync_session_factory)
 
 
 @pytest.mark.anyio
@@ -46,7 +45,7 @@ def test_process_csv_success(sync_db):
 
 
 @pytest.mark.anyio
-def test_process_csv_missing_columns(sync_db):
+def test_process_csv_missing_columns():
     with pytest.raises(Exception) as e:
         process_csv_contents(INVALID_CSV_MISSING_FIELDS)
 
