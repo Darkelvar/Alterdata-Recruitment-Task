@@ -48,13 +48,9 @@ def sync_db(sync_engine):
 
 
 @pytest.fixture(autouse=True)
-def override_dependencies(async_engine, sync_engine):
+def override_dependencies(async_db, sync_engine):
     async def _override_get_db():
-        session_factory = sessionmaker(
-            bind=async_engine, class_=AsyncSession, expire_on_commit=False
-        )
-        async with session_factory() as session:
-            yield session
+        yield async_db
 
     def _override_get_db_sync():
         Session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
@@ -77,6 +73,7 @@ async def prepare_test_db(session_async_engine):
 
 @pytest.fixture(autouse=True)
 def clean_database(sync_db):
+    yield
     sync_db.execute(text("SET session_replication_role = replica;"))
     sync_db.execute(text("TRUNCATE TABLE transactions RESTART IDENTITY CASCADE;"))
     sync_db.execute(text("SET session_replication_role = origin;"))

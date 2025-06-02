@@ -18,9 +18,7 @@ async def test_get_transactions_no_filters(async_db):
         product_id=UUID("222e4567-e89b-12d3-a456-426614174002"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_2 = Transaction(
         transaction_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         timestamp=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -29,7 +27,7 @@ async def test_get_transactions_no_filters(async_db):
         product_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         quantity=2,
     )
-    async_db.add(transaction)
+    async_db.add_all([transaction, transaction_2])
     await async_db.commit()
 
     total, transactions = await get_transactions(async_db)
@@ -51,9 +49,7 @@ async def test_get_transactions_with_limit_and_skip(async_db):
         product_id=UUID("222e4567-e89b-12d3-a456-426614174002"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_2 = Transaction(
         transaction_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -62,9 +58,7 @@ async def test_get_transactions_with_limit_and_skip(async_db):
         product_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_3 = Transaction(
         transaction_id=UUID("e298d7fb-7c49-4573-bd84-1cb2be107029"),
         timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -73,7 +67,7 @@ async def test_get_transactions_with_limit_and_skip(async_db):
         product_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         quantity=2,
     )
-    async_db.add(transaction)
+    async_db.add_all([transaction, transaction_2, transaction_3])
     await async_db.commit()
 
     total, transactions = await get_transactions(async_db)
@@ -101,9 +95,7 @@ async def test_get_transactions_by_product(async_db):
         product_id=UUID("222e4567-e89b-12d3-a456-426614174002"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_2 = Transaction(
         transaction_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -112,7 +104,7 @@ async def test_get_transactions_by_product(async_db):
         product_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         quantity=2,
     )
-    async_db.add(transaction)
+    async_db.add_all([transaction, transaction_2])
     await async_db.commit()
     product_id = UUID("222e4567-e89b-12d3-a456-426614174002")
     total, transactions = await get_transactions(async_db, product_id=product_id)
@@ -132,9 +124,7 @@ async def test_get_transactions_by_customer(async_db):
         product_id=UUID("222e4567-e89b-12d3-a456-426614174002"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_2 = Transaction(
         transaction_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -143,7 +133,7 @@ async def test_get_transactions_by_customer(async_db):
         product_id=UUID("222e4567-e89b-12d3-a456-426614174002"),
         quantity=2,
     )
-    async_db.add(transaction)
+    async_db.add_all([transaction, transaction_2])
     await async_db.commit()
     customer_id = UUID("222e4567-e89b-12d3-a456-426614174002")
     total, transactions = await get_transactions(async_db, customer_id=customer_id)

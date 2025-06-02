@@ -18,9 +18,7 @@ async def test_get_transactions_returns_all(client, async_db):
         product_id=UUID("222e4567-e89b-12d3-a456-426614174002"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_2 = Transaction(
         transaction_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -29,7 +27,7 @@ async def test_get_transactions_returns_all(client, async_db):
         product_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         quantity=2,
     )
-    async_db.add(transaction)
+    async_db.add_all([transaction, transaction_2])
     await async_db.commit()
 
     response = await client.get("/api/v1/transactions/")
@@ -51,9 +49,7 @@ async def test_get_transactions_with_filters(client, async_db):
         product_id=UUID("222e4567-e89b-12d3-a456-426614174002"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_2 = Transaction(
         transaction_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -62,9 +58,7 @@ async def test_get_transactions_with_filters(client, async_db):
         product_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         quantity=2,
     )
-    async_db.add(transaction)
-    await async_db.commit()
-    transaction = Transaction(
+    transaction_3 = Transaction(
         transaction_id=UUID("9429ad84-675f-472d-b699-cf2f08ea8063"),
         timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         amount=100.0,
@@ -73,7 +67,7 @@ async def test_get_transactions_with_filters(client, async_db):
         product_id=UUID("111e4567-e89b-12d3-a456-426614174001"),
         quantity=2,
     )
-    async_db.add(transaction)
+    async_db.add_all([transaction, transaction_2, transaction_3])
     await async_db.commit()
     response = await client.get(
         "/api/v1/transactions/",
