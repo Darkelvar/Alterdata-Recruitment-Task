@@ -22,6 +22,12 @@ def upload_transactions(
     current_user: str = Depends(get_current_user),
 ):
     try:
+        if not file.filename.lower().endswith(".csv"):
+            raise AppException(
+                "Uploaded file must be in CSV format.",
+                code="UPLOAD_FILE_EXTENSION_FAIL",
+                status_code=400,
+            )
         contents = file.file.read()
         if not contents:
             logger.exception(f"Received empty file: {file.filename}.")
