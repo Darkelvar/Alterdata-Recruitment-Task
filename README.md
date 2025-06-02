@@ -11,7 +11,7 @@ Available endpoints:
 - [POST] /api/v1/transactions/upload - used to upload the CSV file for processing
 - [GET] /api/v1/transactions - used to get list of transactions with basic pagination options, and filtering by customer and product
 - [GET] /api/v1/transactions/{transaction_id} – used to get data on a single transaction
-- [GET] /api/v1/reports/customer-summary/(customer_id} – used to get a summary of a customer's transactions, supports getting summary in a given time period
+- [GET] /api/v1/reports/customer-summary/{customer_id} – used to get a summary of a customer's transactions, supports getting summary in a given time period
 - [GET] /api/v1/reports/product-summary/{product_id} - used to get a summary of transactions containing the given product, supports getting summary in a given time period
 - [GET] /api/v1/tasks/{task_id} - used to get results of the celery worker assigned to the file upload, task_id provided by the upload endpoint
 
